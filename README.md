@@ -15,7 +15,7 @@ You can download a copy of all the files in this repository by cloning the [git]
     git clone https://github.com/AlvaroTorresMartos/EWAS_IR
 
 
-or [download a zip archive](https://github.com/AlvaroTorresMartos/EWAS_IR/archive/refs/heads/main.zip).
+or [download a zip archive](https://github.com/AlvaroTorresMartos/EWAS_IR/archive/refs/heads/master.zip).
 
 
 
