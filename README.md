@@ -12,10 +12,10 @@ All source code used to generate results in the paper are organized in folder li
 
 You can download a copy of all the files in this repository by cloning the [git](https://git-scm.com/) repository:
 
-    git clone https://github.com/AlvaroTorresMartos/Multiomics_EWAS_IR
+    git clone https://github.com/AlvaroTorresMartos/EWAS_IR
 
 
-or [download a zip archive](https://github.com/AlvaroTorresMartos/Multiomics_EWAS_IR/archive/refs/heads/main.zip).
+or [download a zip archive](https://github.com/AlvaroTorresMartos/EWAS_IR/archive/refs/heads/main.zip).
 
 
 
