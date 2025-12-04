@@ -1,5 +1,4 @@
 
-
 library(dplyr)
 library(ggplot2)
 library(tibble)
@@ -36,8 +35,8 @@ definitive_lists = readr::read_csv("./definitive_list.csv")
 
 definitive_lists = definitive_lists %>% 
   dplyr::mutate(
-  label = case_when(stringr::str_detect(key, pattern = "cg") ~ key, 
-                    TRUE ~ base::paste(key, Name, sep="_")))
+    label = case_when(stringr::str_detect(key, pattern = "cg") ~ key, 
+                      TRUE ~ base::paste(key, Name, sep="_")))
 
 bVals_BMIQ = bVals_BMIQ %>% 
   tibble::rownames_to_column(var = "CpG") %>% 
@@ -45,15 +44,18 @@ bVals_BMIQ = bVals_BMIQ %>%
   pivot_longer(-CpG, names_to = "Code", values_to = "Beta") %>% 
   pivot_wider(names_from = CpG, values_from = Beta) 
 
-melted <- read.csv2("./BASES_METILACION/COPIASEGURIDAD_02_06_2020/BASE_PUBMEP_LONGITUDINAL_LONGformat_NIÑAS_Y_NIÑOS_213inds_02_06_2020_EPIC.csv", header=TRUE, sep=";", stringsAsFactors=F, dec=",", na.strings=c(""," ","NaN","NA"))
+
+melted <- read.csv2("./BASES_METILACION/COPIASEGURIDAD_02_06_2020/BASE_PUBMEP_LONGI_WIDEformat_NIÑAS_Y_NIÑOS_213inds_02_06_2020_EPIC.csv", header=TRUE, sep=";", stringsAsFactors=F, dec=",", na.strings=c(""," ","NaN","NA"))
+
+
 melted$Code <- gsub("-",".",melted$Code)
-melted$Code_old <- melted$Code
+melted$Code_old <- melted$code_pubmep_T1
 
 melted1 = melted %>% 
-  dplyr::select(Code, Code_old)
+  dplyr::select(Code, Code_old, HOMA_T1)
 
 melted2 = melted %>% 
-  dplyr::select(Code_new_T2, Code_old) %>% 
+  dplyr::select(Code_new_T2, Code_old, HOMA_IR_T2) %>% 
   dplyr::rename(Code = Code_new_T2)
 
 
@@ -71,21 +73,22 @@ bVals_BMIQ = bVals_BMIQ %>%
 
 
 bVals_BMIQ = bVals_BMIQ %>% 
-  dplyr::mutate(Code_old = coalesce(Code_old.x, Code_old.y)) %>% 
-  dplyr::select(-c(Code_old.x, Code_old.y))
+  dplyr::mutate(Code_old = coalesce(Code_old.x, Code_old.y), 
+                HOMA_IR = coalesce(HOMA_T1, HOMA_IR_T2)) %>% 
+  dplyr::select(-c(Code_old.x, Code_old.y, HOMA_T1, HOMA_IR_T2))
 
 bVals_BMIQ = bVals_BMIQ %>% 
   dplyr::mutate(Sample_Time = case_when(Sample_Time == 1 ~ "Baseline", 
-                          Sample_Time == 2 ~ "Follow-up"), 
+                                        Sample_Time == 2 ~ "Follow-up"), 
                 Sample_Group = case_when(Sample_Group == "NW non-IR no change" ~ "G1: Nw non-IR no change", 
                                          Sample_Group == "OB/OW non-IR no change" ~ "G2: Ow/Ob non-IR no change", 
                                          Sample_Group == "OB/OW IR to non-IR" ~ "G3: Ow/Ob IR to non-IR", 
                                          Sample_Group == "OB/OW non-IR to IR" ~ "G4: Ow/Ob non-IR to IR", 
                                          Sample_Group == "OB/OW IR no change" ~ "G5: Ow/Ob IR no change", 
-                                         ), 
+                ), 
                 Sample_Time = as.factor(Sample_Time),
                 Sample_Group = as.factor(Sample_Group)
-                )
+  )
 
 rename_map = setNames(definitive_lists$label, definitive_lists$Name)
 
@@ -94,98 +97,382 @@ bVals_BMIQ <- bVals_BMIQ %>%
 
 labels = rename_map %>% as.character()
 
+# saveRDS(bVals_BMIQ, "./bVals_BMIQ_longitudinal_plots.RDS")
 
 
-# for (i in labels) {
-#   p = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = .data[[i]], group = Code_old)) +
-#     # geom_line(alpha = 0.4) + # removing the lines of all the individuals
-#     stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-#     stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
-#     facet_grid(. ~ Sample_Group) +
-#     labs(x = "", y = i)
-#   
-#   ggsave(
-#     filename = file.path("longitudinal_plots", paste0(i, ".pdf")),
-#     plot = p, device = "pdf",
-#     width = 29.7, height = 21, units = "cm"
-#   )
-# }
+bVals_BMIQ = readr::read_rds("./bVals_BMIQ_longitudinal_plots.RDS")
 
 
-# Multiplanel of longitudinal plots 
+bVals_BMIQ = bVals_BMIQ %>% 
+  dplyr::mutate(Sample_Group = gsub("Ow", "Ov", Sample_Group))
 
-# bVals_BMIQ = bVals_BMIQ %>% 
-#   dplyr::mutate(
-#     Sample_Group = case_when(Sample_Group == "G1: Nw non-IR no change" ~ "G1", 
-#                              Sample_Group == "G2: Ow/Ob non-IR no change" ~ "G2",
-#                              Sample_Group == "G3: Ow/Ob IR to non-IR" ~ "G3",
-#                              Sample_Group == "G4: Ow/Ob non-IR to IR" ~ "G4",
-#                              Sample_Group == "G5: Ow/Ob IR no change" ~ "G5"),
-#     Sample_Time = case_when(Sample_Time == "Baseline" ~ "T1", 
-#                                         Sample_Time == "Follow-up" ~ "T2", 
-#                                         ))
+homa_min <- 0.5
+homa_max <- 6.5
 
-p1 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = EHD2_cg16860712, group = Code_old)) +
-  stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-  stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
-  facet_grid(. ~ Sample_Group) +
-  labs(x = "", y = "EHD2 cg16860712") + 
-  theme(
-    axis.text.x = element_text(size = 6),        
-    strip.text.x = element_text(size = 4.5)    
+## EHD2 (cg16860712)
+meth_min <- 0.935
+meth_max <- 0.965
+
+a <- (homa_max - homa_min) / (meth_max - meth_min)
+b <- homa_min - a * meth_min
+
+bVals_BMIQ <- bVals_BMIQ %>%
+  mutate(
+    HOMA_scaled = (HOMA_IR - b) / a
   )
 
-# p2 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = LINC00708_cg15584606, group = Code_old)) +
-#   stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-#   stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
-#   facet_grid(. ~ Sample_Group) +
-#   labs(x = "", y = "LINC00708 cg15584606") + 
-#   theme(
-#     axis.text.x = element_text(size = 6),        
-#     strip.text.x = element_text(size = 4.5)    
-#   )
-
-p2 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = PEPD_cg08085561, group = Code_old)) +
-  stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-  stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
+p1 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  # ## HOMA-IR: red line
+  # stat_smooth(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # ## HOMA-IR: red points
+  # stat_summary(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  # ) +
+  ## DNA METHYLATION: red line ---
+stat_smooth(
+  aes(y = EHD2_cg16860712, group = 1, colour = "DNA methylation"),
+  method = "lm", se = TRUE, size = 1, show.legend = FALSE
+) +
+  
+  ## DNA METHYLATION: black line ---
+  stat_summary(
+    aes(y = EHD2_cg16860712, group = 1),
+    geom  = "point", fun = mean, shape = 17, size = 3, 
+    colour = "black", show.legend = FALSE
+  ) +
+  
   facet_grid(. ~ Sample_Group) +
-  labs(x = "", y = "PEPD cg08085561")  + 
+  
+  # scale_y_continuous(
+  #   name = "EHD2 (cg16860712)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "EHD2 (cg16860712)") +
+  scale_colour_manual(
+    values = c(
+      "DNA methylation" = "dodgerblue3"#,
+      # "HOMA-IR"        = "#C75A5A"
+    )
+  ) +
   theme(
-    axis.text.x = element_text(size = 6),        
-    strip.text.x = element_text(size = 4.5)    
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
   )
 
-p3 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = SLC2A9_cg16147221, group = Code_old)) +
-  stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-  stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
-  facet_grid(. ~ Sample_Group) +
-  labs(x = "", y = "SLC2A9 cg16147221")  + 
-  theme(
-    axis.text.x = element_text(size = 6),        
-    strip.text.x = element_text(size = 4.5)    
+print(p1)
+
+## PEPD (cg08085561) 
+meth_min <- 0.85
+meth_max <- 0.90
+
+a <- (homa_max - homa_min) / (meth_max - meth_min)
+b <- homa_min - a * meth_min
+
+bVals_BMIQ <- bVals_BMIQ %>%
+  mutate(
+    HOMA_scaled = (HOMA_IR - b) / a
   )
 
-p4 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = VASN_cg00041083, group = Code_old)) +
-  stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-  stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
+p2 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  # ## HOMA-IR: red line
+  # stat_smooth(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # ## HOMA-IR: red points
+  # stat_summary(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  # ) +
+  ## DNA METHYLATION: red line ---
+stat_smooth(
+  aes(y = PEPD_cg08085561, group = 1, colour = "DNA methylation"),
+  method = "lm", se = TRUE, size = 1, show.legend = FALSE
+) +
+  
+  ## DNA METHYLATION: black line ---
+  stat_summary(
+    aes(y = PEPD_cg08085561, group = 1),
+    geom  = "point", fun = mean, shape = 17, size = 3, 
+    colour = "black", show.legend = FALSE
+  ) +
+  
   facet_grid(. ~ Sample_Group) +
-  labs(x = "", y = "VASN cg00041083")  + 
+  
+  # scale_y_continuous(
+  #   name = "PEPD (cg080855612)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "PEPD (cg080855612)") +
+  scale_colour_manual(
+    values = c(
+      "DNA methylation" = "dodgerblue3"#,
+      # "HOMA-IR"        = "#C75A5A"
+    )
+  ) +
   theme(
-    axis.text.x = element_text(size = 6),        
-    strip.text.x = element_text(size = 4.5)    
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
   )
 
-p5 = ggplot(bVals_BMIQ, aes(x = Sample_Time, y = TSC2_cg26819590, group = Code_old)) +
-  stat_smooth(aes(group = 1), method = "lm", se = TRUE) +
-  stat_summary(aes(group = 1), geom = "point", fun = mean, shape = 17, size = 3) +
-  facet_grid(. ~ Sample_Group) +
-  labs(x = "", y = "TSC2 cg26819590")  + 
-  theme(
-    axis.text.x = element_text(size = 6),        
-    strip.text.x = element_text(size = 4.5)    
+print(p2)
+
+## SLC2A9 (cg16147221)
+meth_min <- 0.015
+meth_max <- 0.030
+
+a <- (homa_max - homa_min) / (meth_max - meth_min)
+b <- homa_min - a * meth_min
+
+bVals_BMIQ <- bVals_BMIQ %>%
+  mutate(
+    HOMA_scaled = (HOMA_IR - b) / a
   )
 
-patchwork = p1 + p2 + p3 + p4 + p5 + plot_layout(ncol = 2) + 
+p3 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  # ## HOMA-IR: red line
+  # stat_smooth(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # ## HOMA-IR: red points
+  # stat_summary(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  # ) +
+  ## DNA METHYLATION: red line ---
+stat_smooth(
+  aes(y = SLC2A9_cg16147221, group = 1, colour = "DNA methylation"),
+  method = "lm", se = TRUE, size = 1, show.legend = FALSE
+) +
+  
+  ## DNA METHYLATION: black line ---
+  stat_summary(
+    aes(y = SLC2A9_cg16147221, group = 1),
+    geom  = "point", fun = mean, shape = 17, size = 3, 
+    colour = "black", show.legend = FALSE
+  ) +
+  
+  facet_grid(. ~ Sample_Group) +
+  
+  # scale_y_continuous(
+  #   name = "SLC2A9 (cg16147221)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "SLC2A9 (cg16147221)") +
+  scale_colour_manual(
+    values = c(
+      "DNA methylation" = "dodgerblue3"#,
+      # "HOMA-IR"        = "#C75A5A"
+    )
+  ) +
+  theme(
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
+  )
+
+print(p3)
+
+## VASN (cg00041083)
+meth_min <- 0.92
+meth_max <- 0.96
+
+a <- (homa_max - homa_min) / (meth_max - meth_min)
+b <- homa_min - a * meth_min
+
+bVals_BMIQ <- bVals_BMIQ %>%
+  mutate(
+    HOMA_scaled = (HOMA_IR - b) / a
+  )
+
+p4 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  # ## HOMA-IR: red line
+  # stat_smooth(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # ## HOMA-IR: red points
+  # stat_summary(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  # ) +
+  ## DNA METHYLATION: red line ---
+stat_smooth(
+  aes(y = VASN_cg00041083, group = 1, colour = "DNA methylation"),
+  method = "lm", se = TRUE, size = 1, show.legend = FALSE
+) +
+  
+  ## DNA METHYLATION: black line ---
+  stat_summary(
+    aes(y = VASN_cg00041083, group = 1),
+    geom  = "point", fun = mean, shape = 17, size = 3, 
+    colour = "black", show.legend = FALSE
+  ) +
+  
+  facet_grid(. ~ Sample_Group) +
+  
+  # scale_y_continuous(
+  #   name = "VASN (cg00041083)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "VASN (cg00041083)") +
+  scale_colour_manual(
+    values = c(
+      "DNA methylation" = "dodgerblue3"#,
+      # "HOMA-IR"        = "#C75A5A"
+    )
+  ) +
+  theme(
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
+  )
+
+print(p4)
+
+
+## TSC2 (cg26819590)
+meth_min <- 0.89
+meth_max <- 0.92
+
+a <- (homa_max - homa_min) / (meth_max - meth_min)
+b <- homa_min - a * meth_min
+
+bVals_BMIQ <- bVals_BMIQ %>%
+  mutate(
+    HOMA_scaled = (HOMA_IR - b) / a
+  )
+
+p5 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  ## HOMA-IR: red line
+  # stat_smooth(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # ## HOMA-IR: red points
+  # stat_summary(
+  #   aes(y = HOMA_scaled, group = 1, colour = "HOMA-IR"),
+  #   geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  # ) +
+  ## DNA METHYLATION: red line ---
+stat_smooth(
+  aes(y = TSC2_cg26819590, group = 1, colour = "DNA methylation"),
+  method = "lm", se = TRUE, size = 1, show.legend = FALSE
+) +
+  
+  ## DNA METHYLATION: black line ---
+  stat_summary(
+    aes(y = TSC2_cg26819590, group = 1),
+    geom  = "point", fun = mean, shape = 17, size = 3, 
+    colour = "black", show.legend = FALSE
+  ) +
+  
+  facet_grid(. ~ Sample_Group) +
+  
+  # scale_y_continuous(
+  #   name = "TSC2 (cg26819590)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "TSC2 (cg26819590)") +
+  scale_colour_manual(
+    values = c(
+      "DNA methylation" = "dodgerblue3"#,
+      # "HOMA-IR"        = "#C75A5A"
+    )
+  ) +
+  theme(
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
+  )
+
+print(p5)
+
+p6 <- ggplot(bVals_BMIQ, aes(x = Sample_Time)) +
+  # HOMA-IR: red line
+  stat_smooth(
+    aes(y = HOMA_IR, group = 1, colour = "HOMA-IR"),
+    method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  ) +
+  ## HOMA-IR: red points
+  stat_summary(
+    aes(y = HOMA_IR, group = 1, colour = "HOMA-IR"),
+    geom  = "point", fun = mean, shape = 19, size = 3, show.legend = FALSE
+  ) +
+  # ## DNA METHYLATION: red line ---
+  # stat_smooth(
+  #   aes(y = TSC2_cg26819590, group = 1, colour = "DNA methylation"),
+  #   method = "lm", se = TRUE, size = 1, show.legend = FALSE
+  # ) +
+  # 
+  # ## DNA METHYLATION: black line ---
+  # stat_summary(
+  #   aes(y = TSC2_cg26819590, group = 1),
+  #   geom  = "point", fun = mean, shape = 17, size = 3, 
+  #   colour = "black", show.legend = FALSE
+# ) +
+
+facet_grid(. ~ Sample_Group) +
+  
+  # scale_y_continuous(
+  #   name = "TSC2 (cg26819590)",
+  #   sec.axis = sec_axis(
+  #     ~ a * . + b,
+  #     name = "HOMA-IR",
+  #     breaks = seq(homa_min, homa_max, by = 1)
+  #   )
+  # ) +
+  
+  labs(x = "", colour = "", y = "HOMA-IR") +
+  scale_colour_manual(
+    values = c(
+      # "DNA methylation" = "dodgerblue3"#,
+      "HOMA-IR"        = "#C75A5A"
+    )) + 
+  scale_y_continuous(breaks = c(seq(0.5, 6.5, by = 1)))  +
+  theme(
+    axis.text.x        = element_text(size = 6),
+    strip.text.x       = element_text(size = 6),
+    axis.title.y.right = element_text(color = "#C75A5A")
+  )
+
+print(p6)
+
+patchwork = p1 + p2 + p3 + p4 + p5 + p6 + plot_layout(ncol = 2) + 
   plot_annotation(tag_levels = 'A')
 
 patchwork
+
+# save PDF US legal Landscape
