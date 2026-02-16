@@ -1,5 +1,5 @@
 
-This is an online repository gathering all codes employed for the analyses presented in the paper (Anguita-Ruiz A et al. (2025)). The purpose of this repository is to allow researchers to reproduce the pipeline presented in the paper, as well as to adapt provided codes for the analyses of their own datasets.
+This is an online repository gathering all codes employed for the analyses presented in the paper (Anguita-Ruiz A et al. (2026)). The purpose of this repository is to allow researchers to reproduce the pipeline presented in the paper, as well as to adapt provided codes for the analyses of their own datasets.
 
 This paper has been submitted for publication in *Cardiovascular Diabetology*.
 
