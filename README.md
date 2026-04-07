@@ -77,7 +77,7 @@ If this work or the code provided in this repository has contributed to your res
 
 Please use the following citation:
 
-**Anguita-Ruiz, A., Torres-Martos, Á., Bustos-Aibar, M. et al. Novel epigenetic marks of insulin resistance trajectories in a longitudinal study of childhood obesity. Cardiovasc Diabetol 25, 105 (2026). https://doi.org/10.1186/s12933-026-03101-7.**
+**Anguita-Ruiz, A., Torres-Martos, Á., Bustos-Aibar, M. *et al*. Novel epigenetic marks of insulin resistance trajectories in a longitudinal study of childhood obesity. Cardiovasc Diabetol 25, 105 (2026). https://doi.org/10.1186/s12933-026-03101-7.**
 
 Alternatively, you can use the following BibTeX entry for your reference manager:
 
