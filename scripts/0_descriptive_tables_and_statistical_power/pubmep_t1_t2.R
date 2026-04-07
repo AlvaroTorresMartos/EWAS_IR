@@ -7,19 +7,25 @@ library(gtsummary)
 
 # Import data -----
 
-
-
 pubmep = read.csv2("./data/raw/BASE_PUBMEP_LONGI_WIDEformat_NIÑAS_Y_NIÑOS_213inds_31_01_2022_EPIC.csv")
+# pubmep = readr::read_csv2("/home/usuario/Escritorio/CIBM/BASES_IBEROMICS/OMICS/OMICS_BD/genobox_pubmep/BASE_PUBMEP_LONGI_WIDEformat_NIÑAS_Y_NIÑOS_213inds_31_01_2022_EPIC.csv")
 
-pubmep2 = pubmep %>% 
-  dplyr::filter(EPIC_ARRAY850K_T1_SI_o_NO == 1 & EPIC_ARRAY850K_T2_SI_o_NO == 1) %>% 
-  dplyr::mutate(outcome = coalesce(GRUPOS_exp_interes_NIÑAS,  GRUPOS_exp_interes_NIÑOS), 
+pubmep2 = pubmep %>%
+  dplyr::filter(EPIC_ARRAY850K_T1_SI_o_NO == 1 & EPIC_ARRAY850K_T2_SI_o_NO == 1) %>%
+  dplyr::mutate(outcome = coalesce(GRUPOS_exp_interes_NIÑAS,  GRUPOS_exp_interes_NIÑOS),
                 outcome = gsub("NIÑA_", "", outcome),
                 outcome = gsub("NIÑO_", "", outcome)
-  ) %>% 
-  tidyr::drop_na(outcome) %>% 
-  dplyr::filter(outcome != "OBow_no_ir_to_NW_no_ir") %>% 
+  ) %>%
+  tidyr::drop_na(outcome) %>%
+  dplyr::filter(outcome != "OBow_no_ir_to_NW_no_ir") %>%
   dplyr::filter(Tanner_T2 != 1)
+
+# pubmep = readr::read_csv2("/home/usuario/Escritorio/CIBM/BASES_IBEROMICS/OMICS/OMICS_BD/genobox_pubmep/BASE_PUBMEP_LONGITUDINAL_LONGformat_NIÑAS_Y_NIÑOS_213inds_31_01_2022_EPIC.csv")
+# 
+# pubmep3 = pubmep %>%
+#   dplyr::filter(pubmep$Code %in% pubmep2$Code)
+
+# saveRDS(pubmep3, "./pubmep_longitudinal_groups.RDS")
 
 # pubmep2$outcome %>% table(useNA = "ifany")
 # no_IR_NW_nochange    OBow_IR_nochange    OBow_IR_to_no_ir OBow_no_ir_nochange    OBow_no_ir_to_IR 
